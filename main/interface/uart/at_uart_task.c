@@ -626,10 +626,25 @@ static uint8_t at_queryCmdUartDef (uint8_t *cmd_name)
     return ESP_AT_RESULT_CODE_OK;
 }
 
+static uint8_t at_queryCmdWifiPrivInfo (uint8_t *cmd_name)
+{
+    wifi_config_t wifi_cfg = {0};
+    uint8_t buffer[200];
+
+    esp_wifi_get_config(WIFI_IF_STA, &wifi_cfg);
+    
+    snprintf((char*)buffer, sizeof(buffer) - 1, "%s:\"%s\",\"%s\"",
+        cmd_name, wifi_cfg.sta.ssid, wifi_cfg.sta.password);
+
+    esp_at_port_write_data(buffer, strlen((char*)buffer));
+    return ESP_AT_RESULT_CODE_OK;
+}
+
 static const esp_at_cmd_struct at_custom_cmd[] = {
     {"+UART", NULL, at_queryCmdUart, at_setupCmdUartDef, NULL},
     {"+UART_CUR", NULL, at_queryCmdUart, at_setupCmdUart, NULL},
     {"+UART_DEF", NULL, at_queryCmdUartDef, at_setupCmdUartDef, NULL},
+    {"+CW_PRIVINFO", NULL, at_queryCmdWifiPrivInfo, NULL, NULL},
 };
 
 void at_status_callback (esp_at_status_type status)
