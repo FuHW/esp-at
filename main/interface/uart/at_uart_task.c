@@ -639,10 +639,51 @@ static uint8_t at_queryCmdUartDef (uint8_t *cmd_name)
     return ESP_AT_RESULT_CODE_OK;
 }
 
+static uint8_t at_queryCmdKisoWifiInfo (uint8_t *cmd_name)
+{
+    wifi_config_t wifi_cfg = {0};
+    uint8_t buffer[200] = {0};
+    int pos = 0;
+
+    esp_err_t ret = esp_wifi_get_config(WIFI_IF_STA, &wifi_cfg);
+
+    if (ret == ESP_OK) {
+        snprintf((char*)buffer, sizeof(buffer) - 1, "%s:\"", cmd_name);
+        pos = strlen((char*)buffer);
+
+        for (uint8_t i = 0; i < 32; i++) {
+            if (wifi_cfg.sta.ssid[i] != 0) {
+                buffer[pos++] = wifi_cfg.sta.ssid[i];
+            } else {
+                break;
+            }
+        }
+        buffer[pos++] = 0x22; // "
+        buffer[pos++] = 0x2C; // ,
+        buffer[pos++] = 0x22; // "
+
+        for (uint8_t i = 0; i < 64; i++) {
+            if (wifi_cfg.sta.password[i] != 0) {
+                buffer[pos++] = wifi_cfg.sta.password[i];
+            } else {
+                break;
+            }
+        }
+
+        buffer[pos++] = 0x22; // "
+
+        esp_at_port_write_data(buffer, strlen((char*)buffer));
+        return ESP_AT_RESULT_CODE_OK;
+    } else {
+        return ESP_AT_RESULT_CODE_ERROR;
+    }
+}
+
 static const esp_at_cmd_struct at_custom_cmd[] = {
     {"+UART", NULL, at_queryCmdUart, at_setupCmdUartDef, NULL},
     {"+UART_CUR", NULL, at_queryCmdUart, at_setupCmdUart, NULL},
     {"+UART_DEF", NULL, at_queryCmdUartDef, at_setupCmdUartDef, NULL},
+    {"+KSWINFO", NULL, at_queryCmdKisoWifiInfo, NULL, NULL},
 };
 
 void at_status_callback (esp_at_status_type status)
